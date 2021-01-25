@@ -20,11 +20,13 @@ protocol TextAlignmented: NSObjectProtocol {
 
 extension LayoutSwizzlable where Self: TextAlignmented & Taggable {
     func handleSwitching(forceSwitchingRegardlessOfTag: Bool) {
-        if self.tag < MOLH.shared.maximumLocalizableTag + 1 || forceSwitchingRegardlessOfTag , textAlignment != .center  {
+        if  textAlignment != .center   {
             if MOLHLanguage.isRTLLanguage()  {
+                print("right")
                 if self.textAlignment == .right { return }
                 self.textAlignment = .right
             } else {
+                print("left")
                 if self.textAlignment == .left { return }
                 self.textAlignment = .left
             }
@@ -43,11 +45,6 @@ public protocol MOLHLocalizable {
 /// reset bundles
 public protocol MOLHResetable {
     func reset()
-}
-
-@available(iOS 13.0, *)
-public protocol MOLHSceneResetable {
-    func reset(scene: UIScene)
 }
 
 open class MOLHViewController : UIViewController {
@@ -126,10 +123,10 @@ open class MOLH {
         swizzle(class:UIApplication.self, sel: #selector(getter: UIApplication.userInterfaceLayoutDirection), override: #selector(getter: UIApplication.cstm_userInterfaceLayoutDirection))
 
         if swizzleExtensions {
-            swizzle(class:UIViewController.self, sel: #selector(UIViewController.viewDidLayoutSubviews), override: #selector(UIViewController.mirroringviewDidLoad))
+             swizzle(class:UIViewController.self, sel: #selector(UIViewController.viewDidLayoutSubviews), override: #selector(UIViewController.mirroringviewDidLoad))
             swizzle(class:UIControl.self, sel: #selector(UIControl.awakeFromNib), override: #selector(UIControl.cstmlayoutSubviews))
             swizzle(class:UITextField.self, sel: #selector(UITextField.layoutSubviews), override: #selector(UITextField.cstmlayoutSubviews))
-            swizzle(class:UITextView.self, sel: #selector(UITextView.layoutSubviews), override: #selector(UITextView.cstmlayoutSubviews))
+          swizzle(class:UITextView.self, sel: #selector(UITextView.layoutSubviews), override: #selector(UITextView.cstmlayoutSubviews))
             swizzle(class:UILabel.self, sel: #selector(UILabel.layoutSubviews), override: #selector(UILabel.cstmlayoutSubviews))
         }
     }
@@ -137,25 +134,25 @@ open class MOLH {
     /// Set Language , Language parameter string identify the language e.x. en, ar,fr ...
     open class func setLanguageTo(_ language: String) {
         MOLHLanguage.setAppleLAnguageTo(language)
-        if MOLHLanguage.isRTLLanguage() {
-            UIView.appearance().semanticContentAttribute = .forceRightToLeft
-            UIButton.appearance().semanticContentAttribute = .forceRightToLeft
-            UITextView.appearance().semanticContentAttribute = .forceRightToLeft
-            UITextField.appearance().semanticContentAttribute = .forceRightToLeft
-            UINavigationBar.appearance().semanticContentAttribute = .forceRightToLeft
-            UITabBar.appearance().semanticContentAttribute = .forceRightToLeft
-            UISearchBar.appearance().semanticContentAttribute = .forceRightToLeft
-            UILabel.appearance().semanticContentAttribute = .forceRightToLeft
-        } else {
-            UIView.appearance().semanticContentAttribute = .forceLeftToRight
-            UIButton.appearance().semanticContentAttribute = .forceLeftToRight
-            UITextView.appearance().semanticContentAttribute = .forceLeftToRight
-            UITextField.appearance().semanticContentAttribute = .forceLeftToRight
-            UINavigationBar.appearance().semanticContentAttribute = .forceLeftToRight
-            UITabBar.appearance().semanticContentAttribute = .forceLeftToRight
-            UISearchBar.appearance().semanticContentAttribute = .forceLeftToRight
-            UILabel.appearance().semanticContentAttribute = .forceLeftToRight
-        }
+//        if MOLHLanguage.isRTLLanguage() {
+//            UIView.appearance().semanticContentAttribute = .unspecified
+//            UIButton.appearance().semanticContentAttribute = .unspecified
+//            UITextView.appearance().semanticContentAttribute = .unspecified
+//            UITextField.appearance().semanticContentAttribute = .unspecified
+//            UINavigationBar.appearance().semanticContentAttribute = .unspecified
+//            UITabBar.appearance().semanticContentAttribute = .unspecified
+//            UISearchBar.appearance().semanticContentAttribute = .unspecified
+//            UILabel.appearance().semanticContentAttribute = .unspecified
+//        } else {
+//            UIView.appearance().semanticContentAttribute = .unspecified
+//            UIButton.appearance().semanticContentAttribute = .unspecified
+//            UITextView.appearance().semanticContentAttribute = .unspecified
+//            UITextField.appearance().semanticContentAttribute = .unspecified
+//            UINavigationBar.appearance().semanticContentAttribute = .unspecified
+//            UITabBar.appearance().semanticContentAttribute = .unspecified
+//            UISearchBar.appearance().semanticContentAttribute = .unspecified
+//            UILabel.appearance().semanticContentAttribute = .unspecified
+//        }
     }
     
     /**
@@ -164,9 +161,10 @@ open class MOLH {
     open class func reset(duration: Float = 0.5) {
         var transition = UIView.AnimationOptions.transitionFlipFromRight
         if !MOLHLanguage.isRTLLanguage() {
+            
             transition = .transitionFlipFromLeft
         }
-        reset(transition: transition, duration: duration)
+       // reset(transition: transition, duration: duration)
     }
     
     open class func reset(transition: UIView.AnimationOptions, duration: Float = 0.5) {
@@ -176,7 +174,7 @@ open class MOLH {
                 if delegate is MOLHResetable {
                     (delegate as!MOLHResetable).reset()
                 }
-                UIView.transition(with: ((delegate.window)!)!, duration: TimeInterval(duration), options: transition, animations: {})
+           //     UIView.transition(with: ((delegate.window)!)!, duration: TimeInterval(duration), options: transition, animations: {})
             }
         }
         
@@ -185,7 +183,7 @@ open class MOLH {
                resetWhenNoScenesAvailable()
             } else {
                 for scene in UIApplication.shared.connectedScenes {
-                    (scene.delegate as? MOLHSceneResetable)?.reset(scene: scene)
+                    (scene.delegate as? MOLHResetable)?.reset()
                 }
             }
         } else {
@@ -198,7 +196,7 @@ extension UIApplication {
     @objc var cstm_userInterfaceLayoutDirection : UIUserInterfaceLayoutDirection {
         get {
             var direction = UIUserInterfaceLayoutDirection.leftToRight
-            if MOLHLanguage.isRTLLanguage() {
+            if MOLHLanguage.isRTLLanguage()  {
                 direction = .rightToLeft
             }
             return direction
@@ -245,6 +243,7 @@ extension UIImage {
     public func flippedImage() -> UIImage?{
         if let _cgImag = self.cgImage {
             let flippedimg = UIImage(cgImage: _cgImag, scale:self.scale , orientation: UIImage.Orientation.upMirrored)
+            print("rtl1")
             return flippedimg
         }
         return nil
@@ -252,6 +251,7 @@ extension UIImage {
     
     public func flipIfNeeded() -> UIImage? {
         if MOLHLanguage.isRTLLanguage() {
+            print("rtl")
             return self.flippedImage()
         }
         return self
@@ -263,6 +263,7 @@ extension UIViewController {
     @objc func mirroringviewDidLoad() {
         mirroringviewDidLoad()
         if UIApplication.shared.userInterfaceLayoutDirection == .rightToLeft {
+            print("rtl")
             loopThroughSubViewAndFlipTheImageIfItsNeeded(self.view.subviews)
         }
         // Do any additional setup after loading the view.
@@ -306,7 +307,7 @@ extension UIViewController {
                     _subView.setImage(image, for: UIControl.State.selected)
                     _subView.setImage(image, for: UIControl.State.highlighted)
                 }
-                
+
                 loopThroughSubViewAndFlipTheImageIfItsNeeded(subView.subviews)
             }
         }
@@ -317,15 +318,15 @@ extension UIViewController {
 // MARK : - Extensions
 extension UIControl {
     internal func handleControlSwitching(forceSwitchingRegardlessOfTag: Bool) {
-        if self.tag < MOLH.shared.maximumLocalizableTag + 1  || forceSwitchingRegardlessOfTag {
-            if MOLHLanguage.isRTLLanguage()  {
-                if self.contentHorizontalAlignment == .right { return }
-                self.contentHorizontalAlignment = .right
-            } else {
-                if self.contentHorizontalAlignment == .left { return }
-                self.contentHorizontalAlignment = .left
-            }
-        }
+//        if self.tag < MOLH.shared.maximumLocalizableTag + 1  || forceSwitchingRegardlessOfTag {
+//            if MOLHLanguage.isRTLLanguage()  {
+//                if self.contentHorizontalAlignment == .right { return }
+//                self.contentHorizontalAlignment = .right
+//            } else {
+//                if self.contentHorizontalAlignment == .left { return }
+//                self.contentHorizontalAlignment = .left
+//            }
+//        }
     }
     
     @objc public  func cstmlayoutSubviews() {
@@ -446,4 +447,5 @@ private func swizzle(class cls: AnyClass, sel: Selector, override: Selector) {
         method_exchangeImplementations(origMethod, overrideMethod);
     }
 }
+
 
